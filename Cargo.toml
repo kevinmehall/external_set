@@ -1,0 +1,12 @@
+[package]
+name = "weak_collection"
+version = "0.1.0"
+authors = ["Kevin Mehall <km@kevinmehall.net>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/kevinmehall/weak_collection"
+
+[dependencies]
+
+[lib]
+name = "weak_collection"
+path = "lib.rs"
