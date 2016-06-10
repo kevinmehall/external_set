@@ -32,6 +32,7 @@ impl<T> WeakCollection<T> {
 }
 
 unsafe impl<T: Sync> Sync for WeakCollection<T> {}
+unsafe impl<T: Send> Send for WeakCollection<T> {}
 
 /// RAII structure used to iterate over the items in a WeakCollection, and unlock the collection
 /// when dropped.
