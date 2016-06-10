@@ -86,10 +86,12 @@ pub struct ItemOwner<'s, T: 's> {
 impl<'s, T> ItemOwner<'s, T> {
     /// Remove the item from the collection and return it.
     pub fn take(self) -> T {
-        self.collection.items.write().unwrap().remove(&self.ptr);
-        let ret = unsafe { *Box::from_raw(self.ptr) };
-        ::std::mem::forget(self);
-        ret
+        unsafe {
+            self.collection.items.write().unwrap().remove(&self.ptr);
+            let ret = *Box::from_raw(self.ptr);
+            ::std::mem::forget(self);
+            ret
+        }
     }
 }
 
