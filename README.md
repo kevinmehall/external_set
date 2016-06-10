@@ -1,3 +1,11 @@
+# external_set
+
+A Rust set data structure with externally-owned items, designed for managing 
+subscribers, clients, listeners, or observers across threads.
+
+Inserting an element returns an ItemOwner that maintains ownership of the object.
+When the ItemOwner is dropped, the element is removed from the set.
+
 ## License
 
 Licensed under either of
