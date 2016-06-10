@@ -1,12 +1,12 @@
 [package]
-name = "weak_collection"
+name = "external_set"
 version = "0.1.0"
 authors = ["Kevin Mehall <km@kevinmehall.net>"]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/kevinmehall/weak_collection"
+repository = "https://github.com/kevinmehall/external_set"
 
 [dependencies]
 
 [lib]
-name = "weak_collection"
+name = "external_set"
 path = "lib.rs"

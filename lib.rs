@@ -6,14 +6,14 @@ use std::ops::Deref;
 ///
 /// When an ItemOwner is dropped or its .take() method is called, the
 /// item is removed from the collection.
-pub struct WeakCollection<T> {
+pub struct ExternalSet<T> {
     items: RwLock<HashSet<*mut T>>
 }
 
-impl<T> WeakCollection<T> {
-    /// Create an empty WeakCollection
-    pub fn new() -> WeakCollection<T> {
-        WeakCollection { items: RwLock::new(HashSet::new()) }
+impl<T> ExternalSet<T> {
+    /// Create an empty ExternalSet
+    pub fn new() -> ExternalSet<T> {
+        ExternalSet { items: RwLock::new(HashSet::new()) }
     }
 
     /// Add an item to the collection, returning an ItemOwner to own it.
@@ -26,45 +26,45 @@ impl<T> WeakCollection<T> {
 
     /// Lock the collection for iteration. References obtained from the iterator have the
     /// lifetime of the returned guard.
-    pub fn lock(&self) -> WeakCollectionReadGuard<T> {
-        WeakCollectionReadGuard(self.items.read().unwrap())
+    pub fn lock(&self) -> ExternalSetReadGuard<T> {
+        ExternalSetReadGuard(self.items.read().unwrap())
     }
 }
 
-unsafe impl<T: Sync> Sync for WeakCollection<T> {}
-unsafe impl<T: Send> Send for WeakCollection<T> {}
+unsafe impl<T: Sync> Sync for ExternalSet<T> {}
+unsafe impl<T: Send> Send for ExternalSet<T> {}
 
-/// RAII structure used to iterate over the items in a WeakCollection, and unlock the collection
+/// RAII structure used to iterate over the items in a ExternalSet, and unlock the collection
 /// when dropped.
-pub struct WeakCollectionReadGuard<'c, T: 'c>(::std::sync::RwLockReadGuard<'c, HashSet<*mut T>>);
+pub struct ExternalSetReadGuard<'c, T: 'c>(::std::sync::RwLockReadGuard<'c, HashSet<*mut T>>);
 
-impl<'c, T> WeakCollectionReadGuard<'c, T> {
-    /// Iterate over references to items in the WeakCollection.
+impl<'c, T> ExternalSetReadGuard<'c, T> {
+    /// Iterate over references to items in the ExternalSet.
     ///
     /// The order of iteration is unspecified.
-    pub fn iter<'g>(&'g self) -> WeakCollectionIter<'g, T> {
-        WeakCollectionIter { iter: self.0.iter(), except: None, }
+    pub fn iter<'g>(&'g self) -> ExternalSetIter<'g, T> {
+        ExternalSetIter { iter: self.0.iter(), except: None, }
     }
 
-    /// Iterate over references to items in the WeakCollection, excluding the one owned by the
+    /// Iterate over references to items in the ExternalSet, excluding the one owned by the
     /// provided ItemOwner.
     ///
     /// If the provided ItemOwner is not in the collection (e.g. it was inserted into another
     /// collection), all items will be yielded by the iterator.
     ///
     /// The order of iteration is unspecified.
-    pub fn others<'g>(&'g self, except: &ItemOwner<T>) -> WeakCollectionIter<'g, T> {
-        WeakCollectionIter { iter: self.0.iter(), except: Some(except.ptr) }
+    pub fn others<'g>(&'g self, except: &ItemOwner<T>) -> ExternalSetIter<'g, T> {
+        ExternalSetIter { iter: self.0.iter(), except: Some(except.ptr) }
     }
 }
 
-/// Iterator over the items in a WeakCollection.
-pub struct WeakCollectionIter<'g, T: 'g> {
+/// Iterator over the items in a ExternalSet.
+pub struct ExternalSetIter<'g, T: 'g> {
     iter: ::std::collections::hash_set::Iter<'g, *mut T>,
     except: Option<*mut T>
 }
 
-impl<'g, T> Iterator for WeakCollectionIter<'g, T> {
+impl<'g, T> Iterator for ExternalSetIter<'g, T> {
     type Item = &'g T;
 
     fn next(&mut self) -> Option<&'g T> {
@@ -77,9 +77,9 @@ impl<'g, T> Iterator for WeakCollectionIter<'g, T> {
     }
 }
 
-/// The owner of an item in a WeakCollection
+/// The owner of an item in a ExternalSet
 pub struct ItemOwner<'s, T: 's> {
-    collection: &'s WeakCollection<T>,
+    collection: &'s ExternalSet<T>,
     ptr: *mut T,
 }
 
@@ -114,7 +114,7 @@ impl <'s, T> Deref for ItemOwner<'s, T> {
 
 #[test]
 fn test1() {
-    let c = WeakCollection::<u32>::new();
+    let c = ExternalSet::<u32>::new();
     let i1 = c.insert(1);
     let i2 = c.insert(2);
     let i3 = c.insert(3);
