@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::sync::RwLock;
+use std::ops::Deref;
 
 /// A thread-safe set of references to items owned externally by an ItemOwner.
 ///
@@ -101,6 +102,12 @@ impl<'s, T> Drop for ItemOwner<'s, T> {
     }
 }
 
+impl <'s, T> Deref for ItemOwner<'s, T> {
+    type Target = T;
+    fn deref(&self) -> &T {
+        unsafe { &*self.ptr }
+    }
+}
 #[test]
 fn test1() {
     let c = WeakCollection::<u32>::new();
@@ -117,6 +124,8 @@ fn test1() {
     let mut items = c.lock().iter().map(|&i| i).collect::<Vec<_>>();
     items.sort();
     assert_eq!(items, vec![1, 3]);
+    
+    assert_eq!(*i1, 1);
 
     drop(i1);
     drop(i3);
