@@ -111,6 +111,7 @@ impl <'s, T> Deref for ItemOwner<'s, T> {
         unsafe { &*self.ptr }
     }
 }
+
 #[test]
 fn test1() {
     let c = WeakCollection::<u32>::new();
@@ -121,6 +122,10 @@ fn test1() {
     let mut items = c.lock().iter().map(|&i| i).collect::<Vec<_>>();
     items.sort();
     assert_eq!(items, vec![1, 2, 3]);
+    
+    let mut items = c.lock().others(&i1).map(|&i| i).collect::<Vec<_>>();
+    items.sort();
+    assert_eq!(items, vec![2, 3]);
 
     assert_eq!(i2.take(), 2);
 
