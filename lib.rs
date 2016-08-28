@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::sync::RwLock;
 use std::ops::Deref;
+use std::marker::PhantomData;
 
 /// A thread-safe set of references to items owned externally by an ItemOwner.
 ///
@@ -21,7 +22,7 @@ impl<T> ExternalSet<T> {
     pub fn insert<'s>(&'s self, item: T) -> ItemOwner<'s, T> {
         let ptr = Box::into_raw(Box::new(item));
         self.items.write().unwrap().insert(ptr);
-        ItemOwner { collection: self, ptr: ptr }
+        ItemOwner { collection: self, ptr: ptr, _marker: PhantomData }
     }
 
     /// Lock the collection for iteration. References obtained from the iterator have the
@@ -32,7 +33,7 @@ impl<T> ExternalSet<T> {
 }
 
 unsafe impl<T: Sync> Sync for ExternalSet<T> {}
-unsafe impl<T: Send> Send for ExternalSet<T> {}
+unsafe impl<T: Send + Sync> Send for ExternalSet<T> {}
 
 /// RAII structure used to iterate over the items in a ExternalSet, and unlock the collection
 /// when dropped.
@@ -42,7 +43,7 @@ impl<'c, T> ExternalSetReadGuard<'c, T> {
     /// Iterate over references to items in the ExternalSet.
     ///
     /// The order of iteration is unspecified.
-    pub fn iter<'g>(&'g self) -> ExternalSetIter<'g, T> {
+    pub fn iter<'g: 'c>(&'g self) -> ExternalSetIter<'g, T> {
         ExternalSetIter { iter: self.0.iter(), except: None, }
     }
 
@@ -53,7 +54,7 @@ impl<'c, T> ExternalSetReadGuard<'c, T> {
     /// collection), all items will be yielded by the iterator.
     ///
     /// The order of iteration is unspecified.
-    pub fn others<'g>(&'g self, except: &ItemOwner<T>) -> ExternalSetIter<'g, T> {
+    pub fn others<'g: 'c>(&'g self, except: &ItemOwner<T>) -> ExternalSetIter<'g, T> {
         ExternalSetIter { iter: self.0.iter(), except: Some(except.ptr) }
     }
 }
@@ -81,6 +82,7 @@ impl<'g, T> Iterator for ExternalSetIter<'g, T> {
 pub struct ItemOwner<'s, T: 's> {
     collection: &'s ExternalSet<T>,
     ptr: *mut T,
+    _marker: PhantomData<T>,
 }
 
 impl<'s, T> ItemOwner<'s, T> {
@@ -95,7 +97,7 @@ impl<'s, T> ItemOwner<'s, T> {
     }
 }
 
-unsafe impl<'s, T: Send> Send for ItemOwner<'s, T> {}
+unsafe impl<'s, T: Send + Sync> Send for ItemOwner<'s, T> {}
 unsafe impl<'s, T: Sync> Sync for ItemOwner<'s, T> {}
 
 impl<'s, T> Drop for ItemOwner<'s, T> {
@@ -122,7 +124,7 @@ fn test1() {
     let mut items = c.lock().iter().map(|&i| i).collect::<Vec<_>>();
     items.sort();
     assert_eq!(items, vec![1, 2, 3]);
-    
+
     let mut items = c.lock().others(&i1).map(|&i| i).collect::<Vec<_>>();
     items.sort();
     assert_eq!(items, vec![2, 3]);
@@ -132,7 +134,7 @@ fn test1() {
     let mut items = c.lock().iter().map(|&i| i).collect::<Vec<_>>();
     items.sort();
     assert_eq!(items, vec![1, 3]);
-    
+
     assert_eq!(*i1, 1);
 
     drop(i1);
