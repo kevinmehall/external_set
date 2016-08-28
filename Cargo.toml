@@ -1,6 +1,6 @@
 [package]
 name = "external_set"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Kevin Mehall <km@kevinmehall.net>"]
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/kevinmehall/external_set"
@@ -9,6 +9,7 @@ A set with externally-owned items, designed for managing subscribers, clients,
 listeners, or observers across threads. Inserting an item returns an ItemOwner
 that removes the item when dropped."""
 readme = "README.md"
+documentation = "https://docs.rs/external_set"
 keywords = ["container", "set", "subscribe", "observer"]
 
 [dependencies]
